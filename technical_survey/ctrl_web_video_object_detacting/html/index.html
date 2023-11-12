@@ -34,8 +34,9 @@
     <hr/>
     [Input and ScreeanShot]<br/>
     <video id="videoInput" controls>
-      <source id="videoSource" src="" type="video/mp4">
+      <source id="videoSource" src="" type="video/mov">
     </video>
+
     &nbsp;&nbsp;
     <canvas id="screenShot_" style="display: none;"></canvas>
     <hr/>
@@ -78,10 +79,10 @@
       let inputEl = document.getElementById('videoUpload');
       if (inputEl.files && inputEl.files[0]) {
         let reader = new FileReader();
-        let outputEl = document.getElementById('videoSource');
+        let sourceEl = document.getElementById('videoSource');
         reader.onload = function (e) {
-          outputEl.src = e.target.result;
-          outputEl.play();
+          sourceEl.src = e.target.result;
+          videoInput.play();
         };
         // read a file
         reader.readAsDataURL(inputEl.files[0]);
@@ -103,7 +104,7 @@
       }
     });
 
-    var videoInput        = document.getElementById('videoInput');
+    var videoInput   = document.getElementById('videoInput');
 
     function initCanvases() {
 

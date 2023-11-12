@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="jp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      button {
+        width: 10em;
+        height: 5em;
+        font-size: 40px;
+      }
+      span {
+        font-size: 60px;
+      }
+    </style>
+    <title>Image Viewer</title>
+</head>
+<body>
+<hr/>
+<br/>
+<!-- ダウンロードボタン -->
+<button id="downloadButton">ダウンロード</button>
+&nbsp;&nbsp;&nbsp;&nbsp; 
+<span>INFO =></span> &nbsp;
+<span id="array-display"></span>
+<br/>
+<hr/>
+<br/>
+<!-- 画像を表示するための要素 -->
+<div id="imageContainer"></div>
+
+<script>
+    const imageContainer = document.getElementById('imageContainer');
+    const imagePaths = [
+        'images/image1.jpg',
+        'images/image2.jpg',
+        'images/image3.jpg',
+        // 追加の画像パスを必要に応じて追加
+    ];
+    const displayElement = document.getElementById("array-display");
+    let currentIndex = 0;
+    let clickCount   = 0;
+    let clickData    = [];
+    let currentData  = { fileName: '', x1: 0, y1: 0, x2: 0, y2: 0, x3: 0, y3: 0, x4: 0, y4: 0 };
+
+    document.addEventListener('keydown', (event) => {
+        if (event.code === 'Space') {
+            displayNextImage();
+        }
+    });
+    
+    document.addEventListener('keydown', (event) => {
+        if (event.code === 'Enter') {
+            clickData.push(currentData);
+            displayElement.textContent = 'PUSHED!';
+        }
+    });
+    
+    function displayArray() {
+        // 配列を表示する要素を取得
+        var viewText = '';
+        for (let key in currentData) {
+          viewText = viewText + key + ':' + currentData[key] + ' / ';
+        }
+        displayElement.textContent = viewText;
+     }
+
+    function displayNextImage() {
+        if (currentIndex >= imagePaths.length) {
+            return; // すべての画像が表示されたら終了
+        }
+
+        const img = new Image();
+        img.src = imagePaths[currentIndex];
+
+        img.addEventListener('click', (event) => {
+            const x = event.clientX; // クリックされたX座標
+            const y = event.clientY; // クリックされたY座標
+            const fileName = imagePaths[currentIndex];
+
+            // クリックされた座標情報をオブジェクトに追加
+            if (clickCount === 0) {
+                currentData = { fileName, x1: x, y1: y, x2: 0, y2: 0, x3: 0, y3: 0, x4: 0, y4: 0 };
+            } else if (clickCount === 1) {
+                currentData.x2 = x;
+                currentData.y2 = y;
+            } else if (clickCount === 2) {
+                currentData.x3 = x;
+                currentData.y3 = y;
+            } else if (clickCount === 3) {
+                currentData.x4 = x;
+                currentData.y4 = y;
+            }
+
+            // クリック回数が4回に達したら新しい行を始める
+            clickCount++;
+            if (clickCount === 4) {
+                clickCount = 0;
+            }
+            console.log(currentData);
+            displayArray();
+        });
+
+        while(imageContainer.lastChild){
+            imageContainer.removeChild(imageContainer.lastChild);
+        }
+        imageContainer.appendChild(img);
+        currentIndex++;
+
+        if (currentIndex === imagePaths.length) {
+            console.log('すべての画像が表示されました。');
+        }
+    }
+
+    // ダウンロードボタンがクリックされたときの処理
+    document.getElementById('downloadButton').addEventListener('click', () => {
+        if (clickData.length > 0) downloadTSV();
+    });
+
+    // TSVファイルをダウンロードする関数
+    function downloadTSV() {
+        const tsvContent = clickData.map(entry => {
+            return `${entry.fileName}\t${entry.x1}\t${entry.y1}\t${entry.x2}\t${entry.y2}\t${entry.x3}\t${entry.y3}\t${entry.x4}\t${entry.y4}`;
+        }).join('\n');
+        
+        const blob = new Blob([tsvContent], { type: 'text/tsv' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'click_data.tsv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    displayNextImage();
+</script>
+
+</body>
+</html>

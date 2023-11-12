@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Title -->
+  <title>CONTROL VIDEO STREAM</title>
+
+  <!-- Required Meta Tags Always Come First -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="">
+
+  <!-- CSS Template -->
+  <link rel="stylesheet" href="">
+
+  <style>
+     video,canvas {
+      background-color: lightsteelblue;
+      width: 640px;
+      height: 480px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- BODY -->
+  <div>
+    <hr/>
+    <button id="startAndStopB">Take a move</button>&nbsp;&nbsp;
+    <button id="screenShotB">Take a pic</button>&nbsp;&nbsp;
+    <input id="videoUpload" type="file" accept="video/*" onchange="uploadVideo()"><br/>
+
+    <hr/>
+    [Input and ScreeanShot]<br/>
+    <video id="videoInput" controls>
+      <source id="videoSource" src="" type="video/mp4">
+    </video>
+    &nbsp;&nbsp;
+    <canvas id="screenShot_" style="display: none;"></canvas>
+    <hr/>
+    [Modified Video Stream]<br/>
+    <button onclick="step1_.style.display=='none'?step1_.style.display='':step1_.style.display='none'">open/close</button><br/>
+    <canvas id="step1_"></canvas><hr/>
+    <button onclick="step2_.style.display=='none'?step2_.style.display='':step2_.style.display='none'">open/close</button><br/>
+    <canvas id="step2_"></canvas><hr/>
+    <button onclick="step3_.style.display=='none'?step3_.style.display='':step3_.style.display='none'">open/close</button><br/>
+    <canvas id="step3_"></canvas><hr/>
+    <button onclick="step4_.style.display=='none'?step4_.style.display='':step4_.style.display='none'">open/close</button><br/>
+    <canvas id="step4_"></canvas><hr/>
+    <button onclick="step5_.style.display=='none'?step5_.style.display='':step5_.style.display='none'">open/close</button><br/>
+    <canvas id="step5_"></canvas><hr/>
+    <button onclick="step6_.style.display=='none'?step6_.style.display='':step6_.style.display='none'">open/close</button><br/>
+    <canvas id="step6_"></canvas><hr/>
+    <button onclick="step7_.style.display=='none'?step7_.style.display='':step7_.style.display='none'">open/close</button><br/>
+    <canvas id="step7_"></canvas><hr/>
+    <button onclick="step8_.style.display=='none'?step8_.style.display='':step8_.style.display='none'">open/close</button><br/>
+    <canvas id="step8_"></canvas><hr/>
+    <button onclick="step9_.style.display=='none'?step9_.style.display='':step9_.style.display='none'">open/close</button><br/>
+    <canvas id="step9_"></canvas><hr/>
+
+    <hr/>
+  </div>
+
+  <!-- JS  -->
+  <script type="text/javascript" src="load.js"></script>
+  <script type="text/javascript" src="processor.js"></script>
+  <script type="text/javascript">
+    
+    /** Buttons */
+    var startAndStopB    = document.getElementById('startAndStopB');
+    var screenShotB      = document.getElementById('screenShotB');
+
+    /** streaming */
+    var streaming        = false;
+
+    function uploadVideo() {
+      let inputEl = document.getElementById('videoUpload');
+      if (inputEl.files && inputEl.files[0]) {
+        let reader = new FileReader();
+        let outputEl = document.getElementById('videoSource');
+        reader.onload = function (e) {
+          outputEl.src = e.target.result;
+          outputEl.play();
+        };
+        // read a file
+        reader.readAsDataURL(inputEl.files[0]);
+      }
+    }
+
+    startAndStopB.addEventListener('click', () => {
+      if (!streaming) {
+        startCamera('fhd', onVideoStarted, 'videoInput');
+      } else {
+        stopCamera();
+        onVideoStopped();
+      }
+    });
+
+    screenShotB.addEventListener('click', async () => {
+      if (streaming) {
+        capture('screenShot_');
+      }
+    });
+
+    var videoInput        = document.getElementById('videoInput');
+
+    function initCanvases() {
+
+      let ctx = null;
+
+      let step1_     = document.getElementById('step1_');
+      ctx = step1_.getContext("2d", { willReadFrequently: true });
+      ctx.font = "16px serif";
+      ctx.fillText("Gray", 10, 50);
+
+      let step2_  = document.getElementById('step2_');
+      ctx = step2_.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("GaussianBlur", 10, 50);
+
+      let step3_  = document.getElementById('step3_');
+      ctx = step3_.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("AdaptiveThreshold", 10, 50);
+
+      let step4_  = document.getElementById('step4_');
+      ctx = step4_.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("Find Contours", 10, 50);
+      
+      let screenShot_  = document.getElementById('screenShot_');
+      ctx = screenShot_.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("Screenshot", 10, 50);
+    }
+
+    /** For Video processing */
+    var _video = null;
+    var _stream = null;
+    var _onVideoCallback = null;
+
+    function onVideoStarted() {
+      streaming = true;
+      startAndStopB.innerText = 'Stop';
+      videoInput.width  = videoInput.videoWidth;
+      videoInput.height = videoInput.videoHeight;
+      let canvases = {};
+      canvases.step1_ = 'step1_';
+      canvases.step2_ = 'step2_';
+      canvases.step3_ = 'step3_';
+      canvases.step4_ = 'step4_';
+      canvases.step5_ = 'step5_';
+      canvases.step6_ = 'step6_';
+      canvases.step7_ = 'step7_';
+      canvases.step8_ = 'step8_';
+      canvases.step9_ = 'step9_';
+
+
+      canvases.screenShot_ = 'screenShot_';
+      videoProcessorInitialize(_video, canvases);
+      setTimeout(vidioProcessing, 0);
+      setTimeout(()=>{capture('screenShot_')}, 0);
+    }
+
+    function onVideoStopped() {
+      streaming = false;
+      startAndStopB.innerText = 'Start';
+    }
+
+    function startCamera(resolution, onVideoCallback, videoId) {
+      const constraints = {
+        'qvga': {
+          width  : { exact: 320 },
+          height : { exact: 240 }
+        },
+        'vga': {
+          width  : { exact: 640 },
+          height : { exact: 480 }
+        },
+        'fhd': {
+          width  : { exact: 1920 },
+          height : { exact: 1080 }
+        },
+        '2k': {
+          width  : { exact: 2660 },
+          height : { exact: 1440 }
+        },
+        '4k': {
+          width  : { exact: 3840 },
+          height : { exact: 2160 }
+        }
+      }
+
+      _video              = document.getElementById(videoId);
+      _onVideoCallback    = onVideoCallback
+      let videoConstraint = constraints[resolution];
+      if (!videoConstraint) videoConstraint = true;
+
+      navigator.mediaDevices.getUserMedia({
+        video: videoConstraint, audio: false
+      }).then(function(stream) {
+        _video.srcObject = stream;
+        _video.play();
+        _stream = stream;
+        _video.addEventListener('canplay', _onVideoCallback, false);
+      }).catch(function(err) {
+        console.log('Camera Error: ' + err.name + ' ' + err.message);
+      });
+    }
+
+    function stopCamera() {
+      if (_video) {
+          _video.pause();
+          _video.srcObject = null;
+          _video.removeEventListener('canplay', _onVideoCallback);
+      }
+      if (_stream) {
+          _stream.getVideoTracks()[0].stop();
+      }
+      initCanvases();
+    }
+
+    initCanvases();
+  </script>
+</body>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+  <!-- Title -->
+  <title>CONTROL VIDEO STREAM</title>
+
+  <!-- Required Meta Tags Always Come First -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="">
+
+  <!-- CSS Template -->
+  <link rel="stylesheet" href="">
+
+  <style>
+     video,canvas {
+      background-color: lightsteelblue;
+      width: 320px;
+      height: 240px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- BODY -->
+  <div>
+    <hr/>
+    <button id="startAndStopB">Start</button>&nbsp;&nbsp;
+    <button id="screenShotB">Take a pic</button><br/>
+
+    <hr/>
+    [Input and ScreeanShot]<br/>
+    <video id="videoInput"></video>
+    &nbsp;&nbsp;
+    <canvas id="screenShotOutput"></canvas>
+
+    <hr/>
+    [Modified Video Stream]<br/>
+    <canvas id="rgbGrayOutput"></canvas>
+    &nbsp;&nbsp;
+    <canvas id="bitwiseNotOutput"></canvas>
+    &nbsp;&nbsp;
+    <canvas id="faceDetectOutput"></canvas>
+    &nbsp;&nbsp;
+    <canvas id="faceMosaicOutput"></canvas>
+
+    <hr/>
+  </div>
+
+  <!-- JS  -->
+  <script type="text/javascript" src="load.js"></script>
+  <script type="text/javascript" src="processor.js"></script>
+  <script type="text/javascript">
+    
+    /** Buttons */
+    var startAndStopB    = document.getElementById('startAndStopB');
+    var screenShotB      = document.getElementById('screenShotB');
+
+    /** streaming */
+    var streaming        = false;
+
+    startAndStopB.addEventListener('click', () => {
+      if (!streaming) {
+        startCamera('qvga', onVideoStarted, 'videoInput');
+      } else {
+        stopCamera();
+        onVideoStopped();
+      }
+    });
+
+    screenShotB.addEventListener('click', async () => {
+      if (streaming) {
+        capture('screenShotOutput');
+      }
+    });
+
+    var videoInput        = document.getElementById('videoInput');
+
+    function initCanvases() {
+
+      let ctx = null;
+
+      let rgbGrayOutput     = document.getElementById('rgbGrayOutput');
+      ctx = rgbGrayOutput.getContext("2d", { willReadFrequently: true });
+      ctx.font = "16px serif";
+      ctx.fillText("Gray", 10, 50);
+
+      let bitwiseNotOutput  = document.getElementById('bitwiseNotOutput');
+      ctx = bitwiseNotOutput.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("Bitwise", 10, 50);
+
+      let faceDetectOutput  = document.getElementById('faceDetectOutput');
+      ctx = faceDetectOutput.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("Detact face", 10, 50);
+
+      let faceMosaicOutput  = document.getElementById('faceMosaicOutput');
+      ctx = faceMosaicOutput.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("Mosaic face", 10, 50);
+
+      let screenShotOutput  = document.getElementById('screenShotOutput');
+      ctx = screenShotOutput.getContext("2d");
+      ctx.font = "16px serif";
+      ctx.fillText("Screenshot", 10, 50);
+    }
+
+    /** For Video processing */
+    var _video = null;
+    var _stream = null;
+    var _onVideoCallback = null;
+
+    function onVideoStarted() {
+      streaming = true;
+      startAndStopB.innerText = 'Stop';
+      videoInput.width  = videoInput.videoWidth;
+      videoInput.height = videoInput.videoHeight;
+      let canvases = {};
+      canvases.rgbGrayOutput    = 'rgbGrayOutput';
+      canvases.bitwiseNotOutput = 'bitwiseNotOutput';
+      canvases.faceDetectOutput = 'faceDetectOutput';
+      canvases.faceMosaicOutput = 'faceMosaicOutput';
+      canvases.screenShotOutput = 'screenShotOutput';
+      videoProcessorInitialize(_video, canvases);
+      setTimeout(vidioProcessing, 0);
+      setTimeout(()=>{capture('screenShotOutput')}, 0);
+    }
+
+    function onVideoStopped() {
+      streaming = false;
+      startAndStopB.innerText = 'Start';
+    }
+
+    function startCamera(resolution, onVideoCallback, videoId) {
+      const constraints = {
+        'qvga': {
+          width  : { exact: 320 },
+          height : { exact: 240 }
+        },
+        'vga': {
+          width  : { exact: 640 },
+          height : { exact: 480 }
+        }}
+
+      _video              = document.getElementById(videoId);
+      _onVideoCallback    = onVideoCallback
+      let videoConstraint = constraints[resolution];
+      if (!videoConstraint) videoConstraint = true;
+
+      navigator.mediaDevices.getUserMedia({
+        video: videoConstraint, audio: false
+      }).then(function(stream) {
+        _video.srcObject = stream;
+        _video.play();
+        _stream = stream;
+        _video.addEventListener('canplay', _onVideoCallback, false);
+      }).catch(function(err) {
+        console.log('Camera Error: ' + err.name + ' ' + err.message);
+      });
+    }
+
+    function stopCamera() {
+      if (_video) {
+          _video.pause();
+          _video.srcObject = null;
+          _video.removeEventListener('canplay', _onVideoCallback);
+      }
+      if (_stream) {
+          _stream.getVideoTracks()[0].stop();
+      }
+      initCanvases();
+    }
+
+    initCanvases();
+  </script>
+</body>

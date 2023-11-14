@@ -37,7 +37,6 @@ function videoProcessorInitialize(video, canvases) {
   try {_st9.delete();} catch(e){}
 
   try {_hierarchy.delete();} catch(e){}
-  try {_cap.delete();} catch(e){}
 
   _src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
   _st0 = new cv.Mat(video.height, video.width, cv.CV_8UC1);
@@ -60,7 +59,7 @@ function videoProcessorInitialize(video, canvases) {
   _cap   = new cv.VideoCapture(video);
 }
 
-function vidioProcessing(canvases) {
+async function vidioProcessing(canvases) {
   try {
     if (!streaming) {
         // clean and stop.
@@ -76,7 +75,6 @@ function vidioProcessing(canvases) {
         _st8.delete();
         _st9.delete();
         _hierarchy.delete();
-        _cap.delete();
         return;
     }
 
@@ -121,13 +119,17 @@ function vidioProcessing(canvases) {
 
     // step 5 Bounding Rect
     _st5.data.set(_st0.data);
-    let wlimit = _st0.cols / 64;
-    let hlimit = _st0.rows / 64;
+    let wmin = _st0.cols / 64;
+    let hmin = _st0.rows / 64;
+    let wmax = _st0.cols / 8;
+    let hmax = _st0.rows / 8;
     let _rectangles = [];
     for (let i=0; i < _contours.size(); ++i) {
       let rect = cv.boundingRect(_contours.get(i));
       let color = new cv.Scalar(255, 255, 255);
-      if (rect.width > wlimit && rect.height > hlimit) {
+      if (rect.width > wmin && rect.height > hmin 
+          && rect.width < wmax && rect.height < hmax
+          ) {
         let point1 = new cv.Point(rect.x, rect.y);
         let point2 = new cv.Point(rect.x + rect.width, rect.y + rect.height);
         cv.rectangle(_st5, point1, point2, color, 2);

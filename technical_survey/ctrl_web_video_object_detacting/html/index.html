@@ -27,15 +27,13 @@
   <!-- BODY -->
   <div>
     <hr/>
-    <button id="startAndStopB">Take a move</button>&nbsp;&nbsp;
+    <button id="startAndStopB">Take a movie</button>&nbsp;&nbsp;
     <button id="screenShotB">Take a pic</button>&nbsp;&nbsp;
-    <input id="videoUpload" type="file" accept="video/*" onchange="uploadVideo()"><br/>
+    <input  id="videoUpload" type="file" accept="video/*" onchange="uploadVideo()"><br/>
 
     <hr/>
     [Input and ScreeanShot]<br/>
-    <video id="videoInput" controls>
-      <source id="videoSource" src="" type="video/mov">
-    </video>
+    <video id="videoInput" controls></video>
 
     &nbsp;&nbsp;
     <canvas id="screenShot_" style="display: none;"></canvas>
@@ -74,18 +72,19 @@
 
     /** streaming */
     var streaming        = false;
+    
+    /** input video */
+    var videoInput   = document.getElementById('videoInput');
 
     function uploadVideo() {
       let inputEl = document.getElementById('videoUpload');
       if (inputEl.files && inputEl.files[0]) {
-        let reader = new FileReader();
-        let sourceEl = document.getElementById('videoSource');
-        reader.onload = function (e) {
-          sourceEl.src = e.target.result;
-          videoInput.play();
-        };
-        // read a file
-        reader.readAsDataURL(inputEl.files[0]);
+        videoInput.src = URL.createObjectURL(inputEl.files[0]);
+        videoInput.play();
+        if (!streaming) {
+          _video = videoInput;
+          _video.addEventListener('canplay', onVideoStarted, false);
+        }
       }
     }
 
@@ -102,9 +101,7 @@
       if (streaming) {
         capture('screenShot_');
       }
-    });
-
-    var videoInput   = document.getElementById('videoInput');
+    })   
 
     function initCanvases() {
 
@@ -166,7 +163,7 @@
 
     function onVideoStopped() {
       streaming = false;
-      startAndStopB.innerText = 'Start';
+      startAndStopB.innerText = 'Take a movie';
     }
 
     function startCamera(resolution, onVideoCallback, videoId) {

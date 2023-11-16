@@ -75,11 +75,18 @@ async function getUserMedia(constraints) {
       video.srcObject = stream;
       updateButtons();
       getUserMediaVideoButton.innerText="Stop";
+
+      panRange.value = 0;  onRangeChange(null,'pan', 0);
+      tiltRange.value = 0; onRangeChange(null,'tilt',0);
+      zoomRange.value = 0; onRangeChange(null,'zoom',0);
     } else {
       if (video.srcObject) {
         video.srcObject.getTracks().forEach((track) => track.stop());
         video.srcObject = null;
       }
+      panRange.value = 0; 
+      tiltRange.value = 0; 
+      zoomRange.value = 0; 
       getUserMediaVideoButton.innerText="Start";
     }
   } catch (error) {
@@ -158,9 +165,16 @@ function updateButtons() {
     }
   });
 
-  async function onRangeChange(event) {
-    const name = event.target.dataset.name;
-    const constraint = parseFloat(event.target.value);
+  async function onRangeChange(event=null,n=null,v='0') {
+    let name = null;
+    let constraint = null;
+    if (event) {
+      name = event.target.dataset.name;
+      constraint = parseFloat(event.target.value);
+    } else {
+      name = n;
+      constraint = v;
+    }
     const constraints = { advanced: [{}] };
     constraints.advanced[0][name] = constraint.toFixed(1);
     const applyConstraints = `videoTrack.applyConstraints : {"advanced": [{"${name}": ${constraint.toFixed(

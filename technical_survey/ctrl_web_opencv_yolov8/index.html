@@ -1,0 +1,183 @@
+<html>
+<head>
+  <!-- OpenCV.jsのライブラリをインポート -->
+  <script type="text/javascript" src="load.js"></script>
+</head>
+<body>
+  <!-- ビデオ要素を作成 -->
+  <video id="video" width="640" height="480" autoplay></video>
+  <!-- フレーム要素を作成 -->
+  <canvas id="frame" width="640" height="480"></canvas>
+  <!-- Javascriptのコードを記述 -->
+  <script>
+    // モデルのパスを指定
+    let onnxPath = "yolov8.cfg";
+
+    // モデルを読み込む
+    let net = cv.dnn.readNetFromONNX(onnxPath);
+
+    // モデルをGPUにセットする
+    net.setPreferableBackend(cv.DNN_BACKEND_CUDA);
+    net.setPreferableTarget(cv.DNN_TARGET_CUDA);
+
+    // ビデオ要素を取得
+    let video = document.getElementById("video");
+
+    // ビデオのソースをカメラに設定
+    navigator.mediaDevices.getUserMedia({video: true})
+    .then(function(stream) {
+      // ストリームをビデオにセット
+      video.srcObject = stream;
+    })
+    .catch(function(error) {
+      // エラー処理
+      console.error(error);
+    });
+
+    // フレーム要素を取得
+    let frame = document.getElementById("frame");
+
+    // フレーム要素のコンテキストを取得
+    let ctx = frame.getContext("2d");
+
+    // 車のクラスIDを指定
+    let carClassId = 2;
+
+    // 車の検出結果を格納する配列
+    let cars = [];
+
+    // モデルの出力層の名前を取得
+    let outNames = net.getUnconnectedOutLayersNames();
+
+    // フレームを取得する関数
+    function getFrame() {
+      // ビデオからフレームを取得
+      let mat = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+      let cap = new cv.VideoCapture(video);
+      cap.read(mat);
+
+      // フレームを前処理
+      // 0〜255から0〜1に正規化
+      // yolov8.cfgに書いてあるサイズにリサイズ
+      // BGRからRGBに変換
+      let blob = cv.blobFromImage(mat, 1/255, {width: 608, height: 608}, [0, 0, 0], true, false);
+
+      // モデルに入力
+      net.setInput(blob);
+
+      // フレームを返す
+      return mat;
+    }
+
+    // モデルの出力を取得する関数
+    function getOuts() {
+      // モデルの出力を取得
+      let outs = net.forward(outNames);
+
+      // モデルの出力を返す
+      return outs;
+    }
+
+    // 出力から車を検出する関数
+    function detectCars(outs, mat) {
+      // 出力の数だけループ
+      for (let i = 0; i < outs.length; i++) {
+        // 出力の行数だけループ
+        for (let j = 0; j < outs[i].rows; j++) {
+          // 出力の行を取得
+          let data = outs[i].data32F[j];
+
+          // 出力の行からクラスIDと信頼度を取得
+          let classId = data[1];
+          let confidence = data[2];
+
+          // クラスIDが車で信頼度が閾値以上なら
+          if (classId == carClassId && confidence > 0.5) {
+            // 出力の行から中心座標と幅と高さを取得
+            let centerX = data[3] * mat.cols;
+            let centerY = data[4] * mat.rows;
+            let width = data[5] * mat.cols;
+            let height = data[6] * mat.rows;
+
+            // 中心座標と幅と高さから左上と右下の座標を計算
+            let left = centerX - width / 2;
+            let top = centerY - height / 2;
+            let right = centerX + width / 2;
+            let bottom = centerY + height / 2;
+
+            // 座標を整数に変換
+            left = Math.round(left);
+            top = Math.round(top);
+            right = Math.round(right);
+            bottom = Math.round(bottom);
+
+            // 車の検出結果を配列に追加
+            cars.push({
+              left: left,
+              top: top,
+              right: right,
+              bottom: bottom,
+              confidence: confidence
+            });
+          }
+        }
+      }
+    }
+
+    // 車の検出結果を描画する関数
+    function drawCars(mat, cars) {
+      // 車の数だけループ
+      for (let i = 0; i < cars.length; i++) {
+        // 車の検出結果を取得
+        let car = cars[i];
+
+        // 車の座標を取得
+        let left = car.left;
+        let top = car.top;
+        let right = car.right;
+        let bottom = car.bottom;
+
+        // 車の信頼度を取得
+        let confidence = car.confidence;
+
+        // 車の座標から矩形を作成
+        let rect = new cv.Rect(left, top, right - left, bottom - top);
+
+        // フレームに矩形を描画
+        cv.rectangle(mat, rect, [0, 255, 0, 255], 2);
+
+        // フレームに信頼度を描画
+        let label = "Car: " + confidence.toFixed(2);
+        let textSize = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1);
+        let textRect = new cv.Rect(left, top - textSize.height - 5, textSize.width, textSize.height + 5);
+        cv.rectangle(mat, textRect, [0, 255, 0, 255], -1);
+        cv.putText(mat, label, {x: left, y: top - 5}, cv.FONT_HERSHEY_SIMPLEX, 0.5, [0, 0, 0, 255], 1);
+      }
+    }
+
+    // メインの関数
+    function main() {
+      // フレームを取得
+      let mat = getFrame();
+
+      // モデルの出力を取得
+      let outs = getOuts();
+
+      // 出力から車を検出
+      detectCars(outs, mat);
+
+      // 車の検出結果を描画
+      drawCars(mat, cars);
+
+      // フレームを表示
+      cv.imshow("frame", mat);
+
+      // 次のフレームを取得するために再帰呼び出し
+      requestAnimationFrame(main);
+    }
+
+    // メインの関数を呼び出す
+    main();
+  </script>
+</body>
+</html>

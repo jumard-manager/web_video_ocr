@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Camera-Controller</title>
+    <meta charset="utf-8" />
+    <link rel="icon" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="/script.js" defer></script>
+  </head>
+
+  <body>
+    <div id="preview">
+      <video id="video" autoplay muted width="380" height="140"></video>
+      <div class="ranges">
+        <input type="range" id="panRange" data-name="pan" disabled />
+        <input type="range" id="tiltRange" data-name="tilt" disabled />
+        <input type="range" id="zoomRange" data-name="zoom" disabled />
+      </div>
+    </div>
+
+    <p>Pick a camera or use the default one</p>
+    <select id="cameraSelect" disabled> </select>
+
+    <p>Call <b>navigator.mediaDevices.getUserMedia</b> with</p>
+    <button id="getUserMediaVideoButton" title="Request any camera">Start</button>
+
+    <div id="logs"></div>
+    <script>
+
+    </script>
+  </body>
+</html>
